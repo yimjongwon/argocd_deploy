@@ -1,0 +1,10 @@
+
+# 디폴드값 
+replicaCount: 2
+
+image:  
+  repository: yimjongwon/image-backend
+  tag: "1.0"
+  pullPolicy: IfNotPresent
+
+containerPort: 8000

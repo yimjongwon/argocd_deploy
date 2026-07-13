@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>마이크로서비스 이미지 갤러리</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .gallery { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 20px; }
+        .card { 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            padding: 10px; 
+            text-align: center; 
+            width: 220px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        }
+        /* 이미지 태그 크기 고정 */
+        .card img { width: 200px; height: 200px; object-fit: cover; border-radius: 4px; }
+        .card p { font-size: 14px; color: #333; margin: 10px 0 0 0; word-break: break-all; }
+        form { margin-bottom: 30px; padding: 15px; background: #f9f9f9; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+    <h2>📸 이미지 업로드</h2>
+    <form id="uploadForm">
+        <input type="file" id="imageInput" accept="image/*" required>
+        <button type="submit">업로드 (비동기)</button>
+    </form>
+
+    <h2>🖼️ EFS 저장된 이미지 목록</h2>
+    <!-- DB에서 목록을 가져와서 여기에 카드를 그려넣습니다 -->
+    <div id="gallery" class="gallery"></div>
+
+    <script>
+        // 백엔드(FastAPI) 마이크로서비스 주소를 입력하세요
+        const API_BASE_URL = "https://cloudyim.store"; 
+
+        // ----------------------------------------------------
+        // 1. [목록 보기] DB에서 리스트를 가져와서 화면에 그리기
+        // ----------------------------------------------------
+        async function loadImages() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/images`);
+                const result = await response.json();
+                
+                const gallery = document.getElementById("gallery");
+                gallery.innerHTML = ""; // 기존 목록 초기화
+
+                if (result.status === "success") {
+                    result.data.forEach(item => {
+                        const card = document.createElement("div");
+                        card.className = "card";
+                        
+                        // 핵심 아키텍처: 이미지 src에 백엔드 API 주소 + PK(img_id) 결합
+                        // 브라우저가 이 주소로 GET 요청을 날리면, 백엔드의 FileResponse가 바이너리를 쏴줍니다!
+                        const img = document.createElement("img");
+                        img.src = `${API_BASE_URL}/images/${item.img_id}`;
+                        img.alt = item.original_name;
+                        
+                        const title = document.createElement("p");
+                        title.textContent = item.original_name; // 원래 파일명 표시
+                        
+                        card.appendChild(img);
+                        card.appendChild(title);
+                        gallery.appendChild(card);
+                    });
+                }
+            } catch (error) {
+                console.error("목록을 불러오는 중 에러 발생:", error);
+            }
+        }
+
+        // ----------------------------------------------------
+        // 2. [업로드] 파일을 백엔드로 전송하기 (FormData 사용)
+        // ----------------------------------------------------
+        document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+            e.preventDefault(); // 폼 제출 시 페이지 새로고침 방지
+            
+            const fileInput = document.getElementById("imageInput");
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            // 비동기 파일 전송을 위한 캡슐화 객체 생성
+            const formData = new FormData();
+            formData.append("file", file); // 파이썬 백엔드의 매개변수 이름(file)과 동일해야 함
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/images`, {
+                    method: "POST",
+                    body: formData 
+                });
+
+                if (response.ok) {
+                    alert("EFS에 업로드 성공!");
+                    fileInput.value = ""; // 입력창 비우기
+                    loadImages(); // 업로드 완료 후 목록 비동기 새로고침
+                } else {
+                    alert("업로드 실패: 서버 에러");
+                }
+            } catch (error) {
+                console.error("업로드 중 통신 에러:", error);
+            }
+        });
+
+        // 페이지가 열리자마자 목록을 한 번 불러옵니다.
+        window.onload = loadImages;
+    </script>
+
+</body>
+</html>

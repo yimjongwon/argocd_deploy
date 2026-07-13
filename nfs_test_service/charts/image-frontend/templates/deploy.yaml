@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: image-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: image-frontend
+  template:
+    metadata:
+      labels:
+        app: image-frontend
+    spec:
+      containers:
+      - name: image-frontend-ctn
+        image: yimjongwon/image-frontend:1.0  
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: "200m"
+            memory: "64Mi"

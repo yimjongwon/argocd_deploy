@@ -1,0 +1,4 @@
+fastapi
+uvicorn
+psycopg2-binary # db 연동 위한 dependency
+python-multipart # 파일 업로드 처리하기 위한 dependency
