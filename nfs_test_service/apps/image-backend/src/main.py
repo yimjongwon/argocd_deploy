@@ -14,7 +14,8 @@ WRITABLE_URL = os.getenv("WRITABLE_URL", "postgresql://scott:tiger@localhost:543
 READONLY_URL = os.getenv("READONLY_URL", "postgresql://scott:tiger@localhost:5433/scott_db")
 
 # K8s에서 EFS가 마운트될 경로 (미리 폴더가 있어야 함)
-EFS_MOUNT_PATH = os.getenv("EFS_MOUNT_PATH", "/mnt/efs/images")
+# 환경변수에서 읽어와서 사용하는데 만일 환경변수값이 존재 하지 않으면 기본값 "/mnt/efs/images" 경로 사용하기
+EFS_MOUNT_PATH = os.getenv("EFS_MOUNT_PATH", "C:/개발자가 설정한 local 경로")
 # exist_ok=True "있으면 그냥 넘어가라"
 os.makedirs(EFS_MOUNT_PATH, exist_ok=True)
 

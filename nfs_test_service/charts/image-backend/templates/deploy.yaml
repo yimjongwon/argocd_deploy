@@ -24,6 +24,8 @@ spec:
           value: "postgresql://scott:tiger@my-pg-cluster-rw:5432/scott_db"
         - name: READONLY_URL
           value: "postgresql://scott:tiger@my-pg-cluster-ro:5432/scott_db" 
+        - name: EFS_MOUNT_PATH
+          value: "/mnt/efs/images" # 아래의 efs storage 의 mountPath 와 동일해야 한다
         # 마운트 경로 지정
         volumeMounts:
         - name: efs-storage-volume
