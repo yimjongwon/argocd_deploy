@@ -1,0 +1,13 @@
+apiVersion: v2
+name: msa-platform
+description: "image-front + image-backend"
+type: application
+version: 0.1.0 # chart 의 버전 
+appVersion: "1.0.0" # application 의 버전
+
+# 의존하는 dependency chart 목록
+dependencies:
+  - name: image-backend
+    version: "0.1.0"
+    repository: "file://charts/image-backend"
+    condition: image-backend.enabled

@@ -1,0 +1,59 @@
+# delploy.yaml (
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: image-backend
+spec:
+  replicas: 2             # 파드가 2개 떠도 EFS 덕분에 동일한 이미지를 공유합니다!
+  selector:
+    matchLabels:
+      app: image-backend
+  template:
+    metadata:
+      labels:
+        app: image-backend
+    spec:
+      containers:
+      - name: image-backend-container
+        image: myoli999/image-backend:1.0
+        ports:
+        - containerPort: 8000
+        # DB 접속정보를 환경변수로 넣어준다.
+        env:
+        - name: WRITABLE_URL
+          value: "postgresql://scott:tiger@my-pg-cluster-rw:5432/scott_db"
+        - name: READONLY_URL
+          value: "postgresql://scott:tiger@my-pg-cluster-ro:5432/scott_db" 
+        # 마운트 경로 지정
+        volumeMounts:
+        - name: efs-storage-volume
+          mountPath: /mnt/efs/images # 경로는 마음대로 구성할수 있다.
+        # 1. 컨테이터가 최초로 켜질때 까지만 감시 
+        startupProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.containerPort }}
+          # 10 초 간격으로 
+          periodSeconds: 10 
+          # 총 15번 까지 헬스체크 시도 
+          failureThreshold: 15 
+        # 2. 부팅 완료 이후 데드락 여부만 감시 (실패하면 컨테이너를 자동으로 다시 띄워준다)
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.containerPort }}
+          # startup 이 성공하면 바로 인계받아서 테스트하기 때문에 대기 시간 필요 없음
+          initialDelaySeconds: 0
+          periodSeconds: 10  # 10 초 마다 감시
+        # 3. 트레픽 유입, 차단 여부를 감시 (실패하면 컨터이너를 다시 띄우는게 아니고 트레픽만 차단한다)
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.containerPort }}
+          initialDelaySeconds: 0
+          periodSeconds: 5  # 5 초 마다 감시
+      # 사용할 볼륨(PVC) 정의
+      volumes:
+      - name: efs-storage-volume
+        persistentVolumeClaim:
+          claimName: efs-claim   # efs-pvc.yaml 에서 만든 PVC 이름
